@@ -1,6 +1,8 @@
 //example of some shaders compiled
 flat basic.vs flat.fs
 texture basic.vs texture.fs
+light_multipass basic.vs light_multi.fs
+light_singlepass basic.vs light_single.fs
 skybox basic.vs skybox.fs
 depth quad.vs depth.fs
 multi basic.vs multi.fs
@@ -105,6 +107,182 @@ void main()
 	FragColor = color;
 }
 
+\light_multi.fs
+
+#version 330 core
+
+#define NOLIGHTS 0 
+#define POINT_LIGHT 1
+#define SPOT_LIGHT 2
+#define DIRECTIONAL_LIGHT 3 
+
+in vec3 v_position;
+in vec3 v_world_position;
+in vec3 v_normal;
+in vec2 v_uv;
+in vec4 v_color;
+
+//material properties
+uniform vec4 u_color;
+uniform sampler2D u_albedo_texture;
+uniform sampler2D u_emissive_texture;
+uniform vec3 u_emissive_factor;
+
+//global properties
+uniform float u_time;
+uniform float u_alpha_cutoff;
+
+uniform vec3 u_ambient_light;
+
+uniform vec3 u_light_position;
+uniform vec3 u_light_front;
+uniform vec3 u_light_color;
+uniform vec4 u_light_info; //(light_type, near, far, xxx)
+uniform vec2 u_light_cone;
+
+out vec4 FragColor;
+
+void main()
+{
+	vec2 uv = v_uv;
+	vec4 albedo = u_color;
+	albedo *= texture( u_albedo_texture, v_uv );
+	//Discard as soon as possible
+	if(albedo.a < u_alpha_cutoff)
+		discard;
+
+
+	vec3 N = normalize( v_normal );
+	
+	vec3 light = vec3(0.0);
+	light += u_ambient_light;
+
+	if( int(u_light_info.x) == DIRECTIONAL_LIGHT )
+	{
+		float NdotL = dot(N,u_light_front);
+		light += max( NdotL, 0.0 ) * u_light_color;
+	}
+	else if( int(u_light_info.x) == POINT_LIGHT || int(u_light_info.x) == SPOT_LIGHT )
+	{
+		vec3 L = u_light_position - v_world_position;
+		float dist = length(L);
+		L /= dist;
+		float NdotL = dot(N,L);
+		float att = max(0.0, (u_light_info.z - dist) / u_light_info.z);
+		
+		if( int(u_light_info.x) == SPOT_LIGHT )
+		{
+			float cos_angle = dot( u_light_front, L);
+			if( cos_angle < u_light_cone.y )
+				att = 0.0;
+			else if( cos_angle < u_light_cone.x) 
+				att *= 1.0 - (cos_angle - u_light_cone.x) / (u_light_cone.y - u_light_cone.x);
+		} 
+
+		light += max( NdotL, 0.0 ) * u_light_color * att;
+	}
+
+	vec3 color = albedo.xyz * light;
+	color += u_emissive_factor * texture(u_emissive_texture, v_uv).xyz;
+	
+	FragColor = vec4(color, albedo.a);
+}
+
+
+\light_single.fs
+
+#version 330 core
+
+#define NOLIGHTS 0 
+#define POINT_LIGHT 1
+#define SPOT_LIGHT 2
+#define DIRECTIONAL_LIGHT 3 
+#define MAX_LIGHTS 5
+
+in vec3 v_position;
+in vec3 v_world_position;
+in vec3 v_normal;
+in vec2 v_uv;
+in vec4 v_color;
+
+//material properties
+uniform vec4 u_color;
+uniform sampler2D u_albedo_texture;
+uniform sampler2D u_emissive_texture;
+uniform vec3 u_emissive_factor;
+
+//global properties
+uniform float u_time;
+uniform float u_alpha_cutoff;
+
+uniform vec3 u_ambient_light;
+
+uniform vec3 u_light_position[MAX_LIGHTS];
+uniform vec3 u_light_front[MAX_LIGHTS];
+uniform vec3 u_light_color[MAX_LIGHTS];
+uniform vec4 u_light_info[MAX_LIGHTS]; //(light_type, near, far, xxx)
+uniform vec2 u_light_cone[MAX_LIGHTS];
+uniform int u_num_lights;
+
+out vec4 FragColor;
+
+void main()
+{
+	vec2 uv = v_uv;
+	vec4 albedo = u_color;
+	albedo *= texture( u_albedo_texture, v_uv );
+	//Discard as soon as possible
+	if(albedo.a < u_alpha_cutoff)
+		discard;
+
+
+
+	vec3 N = normalize( v_normal );
+	
+	vec3 light = vec3(0.0);
+	light += u_ambient_light;
+
+	for	( int i = 0; i < MAX_LIGHTS; i++){
+		if (i < u_num_lights){
+			vec4 current_light_info = u_light_info[i];
+			
+			if( int(current_light_info.x) == DIRECTIONAL_LIGHT )
+			{
+				float NdotL = dot(N,u_light_front[i]);
+				light += max( NdotL, 0.0 ) * u_light_color[i];
+			}
+			else if( int(current_light_info.x) == POINT_LIGHT || int(current_light_info.x) == SPOT_LIGHT )
+			{
+				vec3 L = u_light_position[i] - v_world_position;
+				float dist = length(L);
+				L /= dist;
+				float NdotL = dot(N,L);
+				
+				float att = max(0.0, (current_light_info.z - dist) / current_light_info.z);
+				
+				if( int(current_light_info.x) == SPOT_LIGHT )
+				{
+					vec2 current_light_cone = u_light_cone[i];
+					float cos_angle = dot( u_light_front[i], L);
+					if( cos_angle < current_light_cone.y )
+						att = 0.0;
+					else if( cos_angle < current_light_cone.x) 
+						att *= 1.0 - (cos_angle - current_light_cone.x) / (current_light_cone.y - current_light_cone.x);
+				} 
+
+				light += max( NdotL, 0.0 ) * u_light_color[i] * att;
+			}
+			
+		}
+	}
+
+	
+
+	vec3 color = albedo.xyz * light;
+	color += u_emissive_factor * texture(u_emissive_texture, v_uv).xyz;
+	
+	FragColor = vec4(color, albedo.a);
+}
 
 \skybox.fs
 
