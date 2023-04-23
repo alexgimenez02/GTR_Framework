@@ -40,7 +40,12 @@ Renderer::Renderer(const char* shader_atlas_filename)
 	sphere.createSphere(1.0f);
 }
 
-void Renderer::setupScene()
+bool SortRenderCalls(RenderCall* first, RenderCall* second)
+{
+	return first->distance_to_camera > second->distance_to_camera;
+}
+
+void Renderer::setupScene(Camera* camera)
 {
 	if (scene->skybox_filename.size())
 		skybox_cubemap = GFX::Texture::Get(std::string(scene->base_folder + "/" + scene->skybox_filename).c_str());
@@ -48,6 +53,7 @@ void Renderer::setupScene()
 		skybox_cubemap = nullptr;
 
 	lights.clear();
+	render_calls.clear();
 
 	//process entities
 	for (size_t i = 0; i < scene->entities.size(); i++)
@@ -60,6 +66,11 @@ void Renderer::setupScene()
 		if (ent->getType() == eEntityType::PREFAB)
 		{
 			PrefabEntity* pent = (SCN::PrefabEntity*)ent;
+			RenderCall* rc = new RenderCall();
+			vec3 nodepos = pent->root.model.getTranslation();
+			rc->ent = pent;
+			rc->distance_to_camera = camera->eye.distance(nodepos);
+			render_calls.push_back(rc);
 			//Sort opaque to alpha render
 		}
 		else if (ent->getType() == eEntityType::LIGHT) 
@@ -67,12 +78,13 @@ void Renderer::setupScene()
 			lights.push_back((SCN::LightEntity*)ent);
 		}
 	}
+	std::sort(render_calls.begin(), render_calls.end(), SortRenderCalls);
 }
 
 void Renderer::renderScene(SCN::Scene* scene, Camera* camera)
 {
 	this->scene = scene;
-	setupScene();
+	setupScene(camera);
 
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
@@ -89,19 +101,31 @@ void Renderer::renderScene(SCN::Scene* scene, Camera* camera)
 		renderSkybox(skybox_cubemap);
 
 	//render entities
-	for (int i = 0; i < scene->entities.size(); ++i)
+	//for (int i = 0; i < scene->entities.size(); ++i)
+	//{
+	//	BaseEntity* ent = scene->entities[i];
+	//	if (!ent->visible )
+	//		continue;
+
+	//	//is a prefab!
+	//	if (ent->getType())
+	//	{
+	//		PrefabEntity* pent = (SCN::PrefabEntity*)ent;
+	//		if (pent->prefab)
+	//			renderNode( &pent->root, camera);
+	//		//Sort opaque to alpha render
+	//	}
+	//}
+	for each (RenderCall* rc in render_calls)
 	{
-		BaseEntity* ent = scene->entities[i];
-		if (!ent->visible )
+		if (!rc->ent->visible)
 			continue;
 
-		//is a prefab!
-		if (ent->getType())
+		if (rc->ent->getType() == eEntityType::PREFAB)
 		{
-			PrefabEntity* pent = (SCN::PrefabEntity*)ent;
+			PrefabEntity* pent = (SCN::PrefabEntity*)rc->ent;
 			if (pent->prefab)
-				renderNode( &pent->root, camera);
-			//Sort opaque to alpha render
+				renderNode(&pent->root, camera);
 		}
 	}
 }
@@ -262,15 +286,17 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 	GFX::Shader* shader = NULL;
 	GFX::Texture* albedo_texture = NULL;
 	GFX::Texture* emissive_texture = NULL;
+	GFX::Texture* metallic_texture = NULL;
+	GFX::Texture* normal_texture = NULL;
+	GFX::Texture* occlusion_texture = NULL;
 	GFX::Texture* white = GFX::Texture::getWhiteTexture();
 	Camera* camera = Camera::current;
 
 	albedo_texture = material->textures[SCN::eTextureChannel::ALBEDO].texture;
 	emissive_texture = material->textures[SCN::eTextureChannel::EMISSIVE].texture;
-	//texture = material->metallic_roughness_texture;
-	//texture = material->normal_texture;
-	//texture = material->occlusion_texture;
-
+	metallic_texture = material->textures[SCN::eTextureChannel::METALLIC_ROUGHNESS].texture;
+	normal_texture = material->textures[SCN::eTextureChannel::NORMALMAP].texture;
+	occlusion_texture = material->textures[SCN::eTextureChannel::OCCLUSION].texture;
 
 	//select the blending
 	if (material->alpha_mode == SCN::eAlphaMode::BLEND)
@@ -308,8 +334,14 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 
 	shader->setUniform("u_color", material->color);
 	shader->setUniform("u_emissive_factor", material->emissive_factor);
-	shader->setUniform("u_albedo_texture", albedo_texture ? albedo_texture : white, 0);
-	shader->setUniform("u_emissive_texture", emissive_texture ? emissive_texture : white, 1);
+	int curr_text = 0;
+	shader->setUniform("u_albedo_texture", albedo_texture ? albedo_texture : white, curr_text++);
+	shader->setUniform("u_emissive_texture", emissive_texture ? emissive_texture : white, curr_text++);
+	shader->setUniform("u_metallic_texture", metallic_texture ? metallic_texture : white, curr_text++);
+	if(normal_texture)
+		shader->setUniform("u_normal_texture", normal_texture, curr_text++);
+	if(occlusion_texture)
+		shader->setUniform("u_occlusion_texture", occlusion_texture, curr_text++);
 
 
 	//this is used to say which is the alpha threshold to what we should not paint a pixel on the screen (to cut polygons according to texture alpha)
@@ -330,29 +362,38 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 			shader->setUniform("u_light_type", 0);
 			mesh->render(GL_TRIANGLES);
 		}
-
-		for (size_t i = 0; i < lights.size(); i++)
+		else
 		{
-			LightEntity* light = lights[i];
+			for (size_t i = 0; i < lights.size(); i++)
+			{
+				LightEntity* light = lights[i];
+				Matrix44 bounding_model = model;
+				if (!BoundingBoxSphereOverlap(BoundingBox(bounding_model.getTranslation(),vec3(mesh->radius)),
+					light->root.model.getTranslation(),
+					light->light_type == eLightType::POINT 
+					? light->intensity * light->max_distance 
+					: light->max_distance))
+					continue;
 
-			shader->setUniform( "u_light_position", light->root.model.getTranslation() );
-			shader->setUniform( "u_light_front", light->root.model.rotateVector(vec3(0,0,1)) );
-			shader->setUniform( "u_light_color", light->color * light->intensity );
-			shader->setUniform( "u_light_info", vec4((int)light->light_type,(int)light->near_distance, (int)light->max_distance, 0) ); 
+				shader->setUniform( "u_light_position", light->root.model.getTranslation() );
+				shader->setUniform( "u_light_front", light->root.model.rotateVector(vec3(0,0,1)) );
+				shader->setUniform( "u_light_color", light->color * light->intensity );
+				shader->setUniform( "u_light_info", vec4((int)light->light_type,(int)light->near_distance, (int)light->max_distance, 0) ); 
 
-			if (light->light_type == eLightType::SPOT)
-		  		shader->setUniform( "u_light_cone", vec2( cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD)));
-		
+				if (light->light_type == eLightType::SPOT)
+		  			shader->setUniform( "u_light_cone", vec2( cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD)));
+			
 
-			//do the draw call that renders the mesh into the screen
-			mesh->render(GL_TRIANGLES);
-			//BoundingBoxSphereOverlap();
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+				//do the draw call that renders the mesh into the screen
+				mesh->render(GL_TRIANGLES);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-			shader->setUniform( "u_ambient_light", vec3(0.0) );
-			shader->setUniform( "u_emissive_factor", vec3(0.0) );
+				shader->setUniform( "u_ambient_light", vec3(0.0) );
+				shader->setUniform( "u_emissive_factor", vec3(0.0) );
+			}
 		}
+
 	}
 #pragma endregion MULTIPASS
 #pragma region SINGLEPASS

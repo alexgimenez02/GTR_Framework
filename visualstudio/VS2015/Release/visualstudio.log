@@ -1,57 +1,56 @@
 ﻿  renderer.cpp
 E:\uni\ACG\Lab1\GTR_Framework\src\extra\cJSON.h(104,1): warning C4099: 'cJSON': nombre de tipo visto anteriormente usando 'class' ahora se ve usando 'struct'
 E:\uni\ACG\Lab1\GTR_Framework\src\extra\cJSON.h(103): message : vea la declaración de 'cJSON'
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(92,20): warning C4018: '<': no coinciden signed/unsigned
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(170,20): warning C4018: '<': no coinciden signed/unsigned
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(227,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(306,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(341,105): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(194,20): warning C4018: '<': no coinciden signed/unsigned
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(251,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(332,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,106): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(341,78): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,79): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(341,55): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,56): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(344,87): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(384,88): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(344,52): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(384,53): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(380,11): warning C4018: '<': no coinciden signed/unsigned
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(386,88): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(421,11): warning C4018: '<': no coinciden signed/unsigned
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,88): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(386,61): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,61): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(386,37): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,37): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(389,66): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(430,66): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(389,31): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(430,31): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
           with
           [
               T=float
@@ -59,8 +58,9 @@ E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(389,31): warning C4244: 
      Creando biblioteca ..\..\GTR.lib y objeto ..\..\GTR.exp
 LINK : warning LNK4098: la biblioteca predeterminada'LIBCMT' entra en conflicto con otras bibliotecas; use la biblioteca /NODEFAULTLIB:biblioteca
   Generando código
-  Previous IPDB and IOBJ mismatch, fall back to full compilation.
-  All 5764 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  1 of 5840 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    64 functions had inline decision re-evaluated but remain unchanged
   Generación de código finalizada
 glew32s.lib(glew.obj) : warning LNK4099: no se encontró PDB 'vc120.pdb' con 'glew32s.lib(glew.obj)' o en 'E:\uni\ACG\Lab1\GTR_Framework\vc120.pdb'; se vinculará el objeto sin tener en cuenta información de depuración
   visualstudio.vcxproj -> E:\uni\ACG\Lab1\GTR_Framework\GTR.exe

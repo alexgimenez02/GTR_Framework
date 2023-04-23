@@ -4,6 +4,7 @@
 
 #include "light.h"
 
+
 //forward declarations
 class Camera;
 class Skeleton;
@@ -17,6 +18,13 @@ namespace SCN {
 
 	class Prefab;
 	class Material;
+	class RenderCall {
+	public:
+		PrefabEntity* ent;
+
+		float distance_to_camera;
+	};
+
 
 	enum eRenderMode {
 		FLAT,
@@ -39,13 +47,14 @@ namespace SCN {
 
 		std::vector<LightEntity*> lights;
 		std::vector<LightEntity*> visible_ligths;
+		std::vector<RenderCall*> render_calls;
 
 
 		//updated every frame
 		Renderer(const char* shaders_atlas_filename );
 
 		//just to be sure we have everything ready for the rendering
-		void setupScene();
+		void setupScene(Camera* camera);
 
 		//add here your functions
 		//...

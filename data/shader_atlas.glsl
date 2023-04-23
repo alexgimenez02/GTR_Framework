@@ -126,6 +126,9 @@ in vec4 v_color;
 uniform vec4 u_color;
 uniform sampler2D u_albedo_texture;
 uniform sampler2D u_emissive_texture;
+uniform sampler2D u_metallic_texture;
+uniform sampler2D u_normal_texture;
+uniform sampler2D u_occlusion_texture;
 uniform vec3 u_emissive_factor;
 
 //global properties
@@ -146,7 +149,13 @@ void main()
 {
 	vec2 uv = v_uv;
 	vec4 albedo = u_color;
+	vec4 occlusion = vec4(0.0);
+	vec4 metalic = vec4(0.0);
+	vec4 normalmap = vec4(0.0);
 	albedo *= texture( u_albedo_texture, v_uv );
+	occlusion = texture( u_occlusion_texture, v_uv );
+	metalic = texture( u_metallic_texture, v_uv );
+	normalmap = texture( u_normal_texture, v_uv );
 	//Discard as soon as possible
 	if(albedo.a < u_alpha_cutoff)
 		discard;
@@ -155,7 +164,7 @@ void main()
 	vec3 N = normalize( v_normal );
 	
 	vec3 light = vec3(0.0);
-	light += u_ambient_light;
+	light += (u_ambient_light * occlusion.r );
 
 	if( int(u_light_info.x) == DIRECTIONAL_LIGHT )
 	{
@@ -234,8 +243,6 @@ void main()
 	//Discard as soon as possible
 	if(albedo.a < u_alpha_cutoff)
 		discard;
-
-
 
 	vec3 N = normalize( v_normal );
 	
