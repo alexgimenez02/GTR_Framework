@@ -1,6 +1,7 @@
 //example of some shaders compiled
 flat basic.vs flat.fs
 texture basic.vs texture.fs
+no_light basic.vs no_light.fs
 light_multipass basic.vs light_multi.fs
 light_singlepass basic.vs light_single.fs
 skybox basic.vs skybox.fs
@@ -105,6 +106,60 @@ void main()
 		discard;
 
 	FragColor = color;
+}
+
+\no_light.fs
+
+#version 330 core
+
+in vec3 v_position;
+in vec3 v_world_position;
+in vec3 v_normal;
+in vec2 v_uv;
+in vec4 v_color;
+
+//material properties
+uniform vec4 u_color;
+uniform sampler2D u_albedo_texture;
+uniform sampler2D u_emissive_texture;
+uniform sampler2D u_metallic_texture;
+uniform sampler2D u_normal_texture;
+uniform sampler2D u_occlusion_texture;
+uniform vec3 u_emissive_factor;
+
+//global properties
+uniform float u_time;
+uniform float u_alpha_cutoff;
+
+uniform vec3 u_ambient_light;
+
+out vec4 FragColor;
+
+void main()
+{
+	vec2 uv = v_uv;
+	vec4 albedo = u_color;
+	vec4 occlusion = vec4(0.0);
+	vec4 metalic = vec4(0.0);
+	vec4 normalmap = vec4(0.0);
+	albedo *= texture( u_albedo_texture, v_uv );
+	occlusion = texture( u_occlusion_texture, v_uv );
+	metalic = texture( u_metallic_texture, v_uv );
+	normalmap = texture( u_normal_texture, v_uv );
+	//Discard as soon as possible
+	if(albedo.a < u_alpha_cutoff)
+		discard;
+
+
+	vec3 N = normalize( v_normal );
+	
+	vec3 light = vec3(0.0);
+	light += (u_ambient_light * occlusion.r );
+
+	vec3 color = albedo.xyz * light;
+	color += u_emissive_factor * texture(u_emissive_texture, v_uv).xyz;
+	
+	FragColor = vec4(color, albedo.a);
 }
 
 \light_multi.fs

@@ -1,66 +1,66 @@
 ﻿  renderer.cpp
-E:\uni\ACG\Lab1\GTR_Framework\src\extra\cJSON.h(104,1): warning C4099: 'cJSON': nombre de tipo visto anteriormente usando 'class' ahora se ve usando 'struct'
-E:\uni\ACG\Lab1\GTR_Framework\src\extra\cJSON.h(103): message : vea la declaración de 'cJSON'
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(194,20): warning C4018: '<': no coinciden signed/unsigned
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(251,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(332,10): warning C4244: 'inicializando': conversión de 'long' a 'float'; posible pérdida de datos
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,106): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\extra\cJSON.h(104,1): warning C4099: 'cJSON': type name first seen using 'class' now seen using 'struct'
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\extra\cJSON.h(103): message : see declaration of 'cJSON'
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(193,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(250,10): warning C4244: 'initializing': conversion from 'long' to 'float', possible loss of data
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(331,10): warning C4244: 'initializing': conversion from 'long' to 'float', possible loss of data
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(385,106): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,79): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(385,79): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(381,56): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(385,56): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(384,88): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(388,88): warning C4244: 'argument': conversion from 'double' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(384,53): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(388,53): warning C4244: 'argument': conversion from 'double' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(421,11): warning C4018: '<': no coinciden signed/unsigned
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,88): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(426,11): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(432,88): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,61): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(432,61): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(427,37): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(432,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(430,66): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(435,66): warning C4244: 'argument': conversion from 'double' to 'T', possible loss of data
           with
           [
               T=float
           ]
-E:\uni\ACG\Lab1\GTR_Framework\src\pipeline\renderer.cpp(430,31): warning C4244: 'argumento': conversión de 'double' a 'T'; posible pérdida de datos
+C:\Users\u161595\Documents\GitHub\GTR_Framework\src\pipeline\renderer.cpp(435,31): warning C4244: 'argument': conversion from 'double' to 'T', possible loss of data
           with
           [
               T=float
           ]
-     Creando biblioteca ..\..\GTR.lib y objeto ..\..\GTR.exp
-LINK : warning LNK4098: la biblioteca predeterminada'LIBCMT' entra en conflicto con otras bibliotecas; use la biblioteca /NODEFAULTLIB:biblioteca
-  Generando código
-  1 of 5840 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+     Creating library ..\..\GTR.lib and object ..\..\GTR.exp
+LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  Generating code
+  1 of 5879 functions (<0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    64 functions had inline decision re-evaluated but remain unchanged
-  Generación de código finalizada
-glew32s.lib(glew.obj) : warning LNK4099: no se encontró PDB 'vc120.pdb' con 'glew32s.lib(glew.obj)' o en 'E:\uni\ACG\Lab1\GTR_Framework\vc120.pdb'; se vinculará el objeto sin tener en cuenta información de depuración
-  visualstudio.vcxproj -> E:\uni\ACG\Lab1\GTR_Framework\GTR.exe
+    65 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+glew32s.lib(glew.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'glew32s.lib(glew.obj)' or at 'C:\Users\u161595\Documents\GitHub\GTR_Framework\vc120.pdb'; linking object as if no debug info
+  visualstudio.vcxproj -> C:\Users\u161595\Documents\GitHub\GTR_Framework\GTR.exe

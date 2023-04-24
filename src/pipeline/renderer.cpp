@@ -71,7 +71,6 @@ void Renderer::setupScene(Camera* camera)
 			rc->ent = pent;
 			rc->distance_to_camera = camera->eye.distance(nodepos);
 			render_calls.push_back(rc);
-			//Sort opaque to alpha render
 		}
 		else if (ent->getType() == eEntityType::LIGHT) 
 		{
@@ -317,7 +316,9 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 	glEnable(GL_DEPTH_TEST);
 
 	//chose a shader
-	shader = GFX::Shader::Get(is_multipass ? "light_multipass" : "light_singlepass");
+	std::string curr_shader = lights.size() == 0 ? "no_light"
+		: is_multipass ? "light_multipass" : "light_singlepass";
+	shader = GFX::Shader::Get(curr_shader.c_str());
 
 	assert(glGetError() == GL_NO_ERROR);
 
@@ -347,6 +348,7 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 	//this is used to say which is the alpha threshold to what we should not paint a pixel on the screen (to cut polygons according to texture alpha)
 	shader->setUniform("u_alpha_cutoff", material->alpha_mode == SCN::eAlphaMode::MASK ? material->alpha_cutoff : 0.001f);
 
+	vec3 temp_ambient_light = scene->ambient_light;
 	shader->setUniform("u_ambient_light", scene->ambient_light);
 
 	if (render_wireframe)
@@ -359,7 +361,6 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 		glDepthFunc(GL_LEQUAL);
 		if (lights.size() == 0)
 		{
-			shader->setUniform("u_light_type", 0);
 			mesh->render(GL_TRIANGLES);
 		}
 		else
@@ -368,11 +369,9 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 			{
 				LightEntity* light = lights[i];
 				Matrix44 bounding_model = model;
-				if (!BoundingBoxSphereOverlap(BoundingBox(bounding_model.getTranslation(),vec3(mesh->radius)),
+				if (!BoundingBoxSphereOverlap(BoundingBox(bounding_model.getTranslation(), vec3(mesh->radius)),
 					light->root.model.getTranslation(),
-					light->light_type == eLightType::POINT 
-					? light->intensity * light->max_distance 
-					: light->max_distance))
+					light->max_distance * 2))
 					continue;
 
 				shader->setUniform( "u_light_position", light->root.model.getTranslation() );
@@ -389,7 +388,8 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-				shader->setUniform( "u_ambient_light", vec3(0.0) );
+				temp_ambient_light = vec3(0.0);
+				shader->setUniform( "u_ambient_light", temp_ambient_light );
 				shader->setUniform( "u_emissive_factor", vec3(0.0) );
 			}
 		}
@@ -416,27 +416,27 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 		}
 		else
 		{
-			for (size_t i = 0; i < MAX_LIGHTS; i++)
+			for (size_t i = 0; i < min(num_lights,MAX_LIGHTS); i++)
 			{
-				if (i < num_lights) {
-					LightEntity* light = lights[i];
+				
+				LightEntity* light = lights[i];
 			
-					light_position[i] = light->root.model.getTranslation();
-					light_color[i] = light->color * light->intensity;
-					light_front[i] = light->root.model.rotateVector(vec3(0, 0, 1));
-					light_info[i] = vec4((int)light->light_type, (int)light->near_distance, (int)light->max_distance, 0);
+				light_position[i] = light->root.model.getTranslation();
+				light_color[i] = light->color * light->intensity;
+				light_front[i] = light->root.model.rotateVector(vec3(0, 0, 1));
+				light_info[i] = vec4((int)light->light_type, (int)light->near_distance, (int)light->max_distance, 0);
 
-					if(light->light_type == eLightType::SPOT)
-						light_cone[i] = vec2(cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD));
-				}
+				if(light->light_type == eLightType::SPOT)
+					light_cone[i] = vec2(cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD));
+				
 			}
 
-			shader->setUniform3Array("u_light_position", (float*)&light_position, num_lights);
-			shader->setUniform3Array("u_light_color", (float*)&light_color, num_lights);
-			shader->setUniform3Array("u_light_front", (float*)&light_front, num_lights);
-			shader->setUniform3Array("u_light_info", (float*)&light_info, num_lights);
-			shader->setUniform3Array("u_light_cone", (float*)&light_cone, num_lights);
-			shader->setUniform1("u_num_lights", num_lights);
+			shader->setUniform3Array("u_light_position", (float*)&light_position, min(num_lights, MAX_LIGHTS));
+			shader->setUniform3Array("u_light_color", (float*)&light_color, min(num_lights, MAX_LIGHTS));
+			shader->setUniform3Array("u_light_front", (float*)&light_front, min(num_lights, MAX_LIGHTS));
+			shader->setUniform4Array("u_light_info", (float*)&light_info, min(num_lights, MAX_LIGHTS));
+			shader->setUniform2Array("u_light_cone", (float*)&light_cone, min(num_lights, MAX_LIGHTS));
+			shader->setUniform1("u_num_lights", min(num_lights, MAX_LIGHTS));
 
 			mesh->render(GL_TRIANGLES);
 		}
@@ -503,8 +503,8 @@ void Renderer::showUI()
 	ImGui::Checkbox("Boundaries", &render_boundaries);
 
 	ImGui::Combo("Render Mode", (int*)&render_mode, "FLAT\0LIGHTS", 2);
-	ImGuiContext& gg = *GImGui;
-	TogglePassMode("", &is_multipass);
+	if(render_mode == eRenderMode::LIGHTS)
+		TogglePassMode("", &is_multipass);
 
 	//add here your stuff
 	//...
