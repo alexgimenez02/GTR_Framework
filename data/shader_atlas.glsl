@@ -219,7 +219,7 @@ void main()
 	vec3 N = normalize( v_normal );
 	
 	vec3 light = vec3(0.0);
-	light += (u_ambient_light * occlusion.r );
+	light += (u_ambient_light * metalic.r );
 
 	if( int(u_light_info.x) == DIRECTIONAL_LIGHT )
 	{
@@ -337,8 +337,6 @@ void main()
 			
 		}
 	}
-
-	
 
 	vec3 color = albedo.xyz * light;
 	color += u_emissive_factor * texture(u_emissive_texture, v_uv).xyz;
