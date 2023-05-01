@@ -28,6 +28,7 @@ namespace SCN {
 
 	enum eRenderMode {
 		FLAT,
+		TEXTURED,
 		LIGHTS
 	};
 
@@ -39,6 +40,7 @@ namespace SCN {
 		bool render_wireframe;
 		bool render_boundaries;
 		bool is_multipass;
+		bool show_shadowmaps;
 		eRenderMode render_mode;
 
 		GFX::Texture* skybox_cubemap;
@@ -62,6 +64,12 @@ namespace SCN {
 		//renders several elements of the scene
 		void renderScene(SCN::Scene* scene, Camera* camera);
 
+		void renderFrame(SCN::Scene* scene, Camera* camera);
+
+		void debugShadowmaps();
+
+		void generateShadowmaps();
+		
 		//render the skybox
 		void renderSkybox(GFX::Texture* cubemap);
 	
@@ -70,6 +78,7 @@ namespace SCN {
 
 		//to render one mesh given its material and transformation matrix
 		void renderMeshWithMaterial(const Matrix44 model, GFX::Mesh* mesh, SCN::Material* material);
+		void renderMeshWithMaterialFlat(const Matrix44 model, GFX::Mesh* mesh, SCN::Material* material);
 		void renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh, SCN::Material* material);
 
 
