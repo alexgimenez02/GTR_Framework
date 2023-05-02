@@ -8,11 +8,8 @@ This delivery contains the implementation of lights (POINT, SPOT and DIRECTIONAL
 Additionally, you can swap between different Render Modes with an ImGui Combo, the three modes are: FLAT, TEXTURED and LIGHTS. When selecting lights, 2 extra Widgets will appear:
 - A Switch toggle that changes between singlepass and multipass (Default: Multipass)
 - A Checkbox that enables the visualization of shadowmaps (in light order, first Spot, then Point and then Directional)
+- A Switch toggle that enables and disables shadowing
 
  · Missing parts
 
 The shadowmaps for point lights is missing due to not being the evaluation section of the instructions (Link: https://docs.google.com/presentation/d/1V4LeBHyZtTfkvAGaeogu9WFVzOJjWMuVk72FD_vd97Q/edit#slide=id.g845a05d37c_2_0).
-
- · Some known issues
-
-The shadows for singlepass do not work correctly, could not find why, therefore when entering singlepass, a new Switch will appear with the text: Enable Shadows
