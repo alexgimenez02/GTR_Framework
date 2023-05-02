@@ -41,6 +41,7 @@ namespace SCN {
 		bool render_boundaries;
 		bool is_multipass;
 		bool show_shadowmaps;
+		bool show_shadows;
 		eRenderMode render_mode;
 
 		GFX::Texture* skybox_cubemap;
@@ -67,6 +68,8 @@ namespace SCN {
 		void renderFrame(SCN::Scene* scene, Camera* camera);
 
 		void debugShadowmaps();
+
+		void generateShadowAtlas();
 
 		void generateShadowmaps();
 		

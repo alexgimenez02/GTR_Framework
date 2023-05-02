@@ -31,6 +31,7 @@ Renderer::Renderer(const char* shader_atlas_filename)
 	render_mode = eRenderMode::LIGHTS;
 	is_multipass = true;
 	show_shadowmaps = false;
+	show_shadows = false;
 	scene = nullptr;
 	skybox_cubemap = nullptr;
 
@@ -367,6 +368,7 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 	glEnable(GL_DEPTH_TEST);
 
 	//chose a shader
+
 	std::string curr_shader = lights.size() == 0 ? "no_light"
 		: is_multipass ? "light_multipass" : "light_singlepass";
 	shader = GFX::Shader::Get(curr_shader.c_str());
@@ -492,15 +494,17 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 				if(light->light_type == eLightType::SPOT)
 					light_cone[i] = vec2(cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD));
 
-				shadow_params[i] = vec2(light->shadowmap ? 1 : 0, light->shadow_bias);
+				shadow_params[i] = vec2((light->shadowmap && show_shadows) ? 1 : 0, light->shadow_bias);
 				if (light->shadowmap)
 				{
 					shadowmaps[i] = light->shadowmap;
 					shadow_viewprojs[i] = light->shadow_viewproj;
-					continue;
 				}
-				shadowmaps[i] = nullptr;
-				shadow_viewprojs[i] = mat4();
+				else
+				{
+					shadowmaps[i] = nullptr;
+					shadow_viewprojs[i] = mat4();
+				}
 				
 			}
 
@@ -513,15 +517,18 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 
 
 			shader->setUniform2Array("u_shadow_params", (float*)&shadow_params, min(num_lights, MAX_LIGHTS));
-			shader->setMatrix44Array("u_shadow_viewproj", shadow_viewprojs, min(num_lights, MAX_LIGHTS));
-			int i = 1;
-			for (size_t i = 0; i < min(num_lights, MAX_LIGHTS); i++)
+			if (show_shadows)
 			{
-				if (i < num_lights)
+				shader->setMatrix44Array("u_shadow_viewproj", shadow_viewprojs, min(num_lights, MAX_LIGHTS));
+				int i = 1;
+				for (size_t i = 0; i < min(num_lights, MAX_LIGHTS); i++)
 				{
- 					std::string uniform_string = "u_shadowmap[" + std::to_string(i) + "]";
-					if(shadowmaps[i])
-						shader->setUniform(uniform_string.c_str(), shadowmaps[i], 8 + i);
+					if (i < num_lights)
+					{
+ 						std::string uniform_string = "u_shadowmap[" + std::to_string(i) + "]";
+						if(shadowmaps[i])
+							shader->setUniform(uniform_string.c_str(), shadowmaps[i], 8 + i);
+					}
 				}
 			}
 
@@ -571,6 +578,80 @@ bool checkVectors(vec3 vector1, vec3 vector2)
 	return vector1.x == vector2.x && vector1.y == vector2.y && vector1.z == vector2.z;
 }
 
+void Renderer::generateShadowAtlas()
+{
+	Camera camera;
+	GFX::startGPULabel("Shadow atlas");
+
+	eRenderMode prev = render_mode;
+	render_mode = eRenderMode::FLAT;
+
+	vec2 size = vec2(1024, 1024);
+	int i = 0;
+	int j = 0;
+	for (auto light : lights)
+	{
+		if (!light->cast_shadows)
+			continue;
+
+		//check if light inside camera
+		//TODO
+
+		if (!light->shadowmap_fbo)
+		{
+			light->shadowmap_fbo = new GFX::FBO();
+			light->shadowmap_fbo->setDepthOnly(1024, 1024);
+			light->shadowmap = light->shadowmap_fbo->depth_texture;
+		}
+
+		vec3 pos = light->root.model.getTranslation();
+		vec3 front = light->root.model.rotateVector(vec3(0, 0, -1));
+		vec3 up = checkVectors(front, vec3(0, -1, 0)) ? vec3(0, -1, 0) : vec3(0, 1, 0);
+
+		camera.lookAt(pos, pos + front, up);
+
+		float aspect = 1.0;
+		if (light->light_type == eLightType::SPOT)
+			camera.setPerspective(light->cone_info.y * 2, aspect, light->near_distance, light->max_distance);
+		else if (light->light_type == eLightType::DIRECTIONAL)
+		{
+			float halfarea = light->area / 2;
+			camera.setOrthographic(-halfarea, halfarea, halfarea * aspect, -halfarea * aspect, 0.1, light->max_distance);
+		}
+
+		light->shadowmap_fbo->bind();
+		{
+			vec2 region = vec2(i * (size.x * 0.25), j * (size.y * 0.25));
+			vec4 shadow_region(region.x, region.y, size.x * 0.25, size.y * 0.25);
+
+
+			glViewport(shadow_region.x, shadow_region.y,
+				shadow_region.z, shadow_region.w);
+			glScissor(shadow_region.x, shadow_region.y,
+				shadow_region.z, shadow_region.w);
+			glEnable(GL_SCISSOR_TEST);
+
+			//render shadowmap...
+			renderFrame(scene, &camera);
+			glClear(GL_DEPTH_TEST);
+		}
+
+		light->shadowmap_fbo->unbind();
+
+		light->shadow_viewproj = camera.viewprojection_matrix;
+		i++;
+		if (i % 2 == 0)
+		{
+			j++;
+			i = 0;
+		}
+	}
+
+	render_mode = prev;
+
+	GFX::endGPULabel();
+}
+
 void Renderer::generateShadowmaps()
 {
 	Camera camera;
@@ -587,7 +668,7 @@ void Renderer::generateShadowmaps()
 
 		//check if light inside camera
 		//TODO
-		
+			
 		if (!light->shadowmap_fbo)
 		{
 			light->shadowmap_fbo = new GFX::FBO();
@@ -644,11 +725,7 @@ void TogglePassMode(const char* str_id, bool* v)
 	
 	ImGui::SameLine();
 	ImGui::InvisibleButton(str_id, ImVec2(width, height));
-	if (ImGui::IsItemClicked())
-	{
-		*v = !*v;
-
-	}
+	if (ImGui::IsItemClicked()) *v = !*v;
 	ImGuiContext& gg = *GImGui;
 	float ANIM_SPEED = 0.085f;
 	if (gg.LastActiveId == gg.CurrentWindow->GetID(str_id))// && g.LastActiveIdTimer < ANIM_SPEED)
@@ -664,6 +741,33 @@ void TogglePassMode(const char* str_id, bool* v)
 	ImGui::NewLine();
 }
 
+void ToggleShadows(const char* str_id, bool* v)
+{
+	ImGui::Text("Enable Shadows");
+	ImGui::SameLine();
+	ImVec4* colors = ImGui::GetStyle().Colors;
+	ImVec2 p = ImGui::GetCursorScreenPos();
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+	float height = ImGui::GetFrameHeight();
+	float width = height * 1.55f;
+	float radius = height * 0.50f;
+
+	ImGui::InvisibleButton(str_id, ImVec2(width, height));
+	if (ImGui::IsItemClicked()) *v = !*v;
+	ImGuiContext& gg = *GImGui;
+	float ANIM_SPEED = 0.085f;
+	if (gg.LastActiveId == gg.CurrentWindow->GetID(str_id))// && g.LastActiveIdTimer < ANIM_SPEED)
+		float t_anim = ImSaturate(gg.LastActiveIdTimer / ANIM_SPEED);
+	if (ImGui::IsItemHovered())
+		draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), ImGui::GetColorU32(*v ? colors[ImGuiCol_ButtonActive] : ImVec4(0.78f, 0.78f, 0.78f, 1.0f)), height * 0.5f);
+	else
+		draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), ImGui::GetColorU32(*v ? colors[ImGuiCol_Button] : ImVec4(0.85f, 0.85f, 0.85f, 1.0f)), height * 0.50f);
+	draw_list->AddCircleFilled(ImVec2(p.x + radius + (*v ? 1 : 0) * (width - radius * 2.0f), p.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+	
+}
+
+
 
 void Renderer::showUI()
 {
@@ -676,6 +780,8 @@ void Renderer::showUI()
 	{
 		TogglePassMode("", &is_multipass);
 		ImGui::Checkbox("Show shadowmaps", &show_shadowmaps);
+		if (!is_multipass)
+			ToggleShadows("", &show_shadows);
 	}
 
 }
