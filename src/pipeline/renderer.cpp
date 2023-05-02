@@ -31,7 +31,7 @@ Renderer::Renderer(const char* shader_atlas_filename)
 	render_mode = eRenderMode::LIGHTS;
 	is_multipass = true;
 	show_shadowmaps = false;
-	show_shadows = false;
+	show_shadows = true;
 	scene = nullptr;
 	skybox_cubemap = nullptr;
 
@@ -433,7 +433,7 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 				shader->setUniform( "u_light_color", light->color * light->intensity );
 				shader->setUniform( "u_light_info", vec4((int)light->light_type,(int)light->near_distance, (int)light->max_distance, 0) ); 
 
-				shader->setUniform( "u_shadow_params", vec2(light->shadowmap?1.0f:0.0f, light->shadow_bias )); 
+				shader->setUniform( "u_shadow_params", vec2((light->shadowmap && show_shadows)?1.0f:0.0f, light->shadow_bias ));
 				if (light->shadowmap)
 				{
 					shader->setUniform( "u_shadowmap", light->shadowmap, 8 );
@@ -515,20 +515,17 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 			shader->setUniform2Array("u_light_cone", (float*)&light_cone, min(num_lights, MAX_LIGHTS));
 			shader->setUniform1("u_num_lights", min(num_lights, MAX_LIGHTS));
 
+			std::string uniform_names[] = { "u_shadowmap[0]","u_shadowmap[1]", "u_shadowmap[2]", "u_shadowmap[3]", "u_shadowmap[4]" };
 
 			shader->setUniform2Array("u_shadow_params", (float*)&shadow_params, min(num_lights, MAX_LIGHTS));
 			if (show_shadows)
 			{
 				shader->setMatrix44Array("u_shadow_viewproj", shadow_viewprojs, min(num_lights, MAX_LIGHTS));
-				int i = 1;
-				for (size_t i = 0; i < min(num_lights, MAX_LIGHTS); i++)
+				for (size_t j = 0; j < min(num_lights, MAX_LIGHTS); j++)
 				{
-					if (i < num_lights)
-					{
- 						std::string uniform_string = "u_shadowmap[" + std::to_string(i) + "]";
-						if(shadowmaps[i])
-							shader->setUniform(uniform_string.c_str(), shadowmaps[i], 8 + i);
-					}
+					if (shadowmaps[j])
+						shader->setUniform(uniform_names[j].c_str(), shadowmaps[j], 12 + j);
+					
 				}
 			}
 
@@ -780,8 +777,7 @@ void Renderer::showUI()
 	{
 		TogglePassMode("", &is_multipass);
 		ImGui::Checkbox("Show shadowmaps", &show_shadowmaps);
-		if (!is_multipass)
-			ToggleShadows("", &show_shadows);
+		ToggleShadows("", &show_shadows);
 	}
 
 }
