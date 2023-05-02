@@ -383,6 +383,78 @@ uniform vec4 u_light_info[MAX_LIGHTS]; //(light_type, near, far, xxx)
 uniform vec2 u_light_cone[MAX_LIGHTS];
 uniform int u_num_lights;
 
+uniform vec2 u_shadow_params[MAX_LIGHTS];
+uniform mat4 u_shadow_viewproj[MAX_LIGHTS];
+uniform sampler2D u_shadowmap[MAX_LIGHTS];
+
+float testShadow( vec3 pos, int i, float shadow_bias  )
+{
+	//project our 3D position to the shadowmap
+	vec4 proj_pos = u_shadow_viewproj[i] * vec4(pos,1.0);
+
+	//from homogeneus space to clip space
+	vec2 shadow_uv = proj_pos.xy / proj_pos.w;
+
+	//from clip space to uv space
+	shadow_uv = shadow_uv * 0.5 + vec2(0.5);
+
+	//get point depth [-1 .. +1] in non-linear space
+	float real_depth = (proj_pos.z - shadow_bias) / proj_pos.w;
+
+	//normalize from [-1..+1] to [0..+1] still non-linear
+	real_depth = real_depth * 0.5 + 0.5;
+
+	//for directional lights
+
+	//it is outside on the sides
+	if( shadow_uv.x < 0.0 || shadow_uv.x > 1.0 ||
+		shadow_uv.y < 0.0 || shadow_uv.y > 1.0 )
+			return 0.0;
+
+	//it is before near or behind far plane
+	if(real_depth < 0.0 || real_depth > 1.0)
+		return 1.0;
+
+
+	//read depth from depth buffer in [0..+1] non-linear
+	float shadow_depth = texture( u_shadowmap[i], shadow_uv).x;
+
+	//compute final shadow factor by comparing
+	float shadow_factor = 1.0;
+
+	//we can compare them, even if they are not linear
+	if( shadow_depth < real_depth )
+		shadow_factor = 0.0;
+	return shadow_factor;
+}
+
+mat3 cotangent_frame(vec3 N, vec3 p, vec2 uv)
+{
+	// get edge vectors of the pixel triangle
+	vec3 dp1 = dFdx( p );
+	vec3 dp2 = dFdy( p );
+	vec2 duv1 = dFdx( uv );
+	vec2 duv2 = dFdy( uv );
+	
+	// solve the linear system
+	vec3 dp2perp = cross( dp2, N );
+	vec3 dp1perp = cross( N, dp1 );
+	vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+	vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+	// construct a scale-invariant frame 
+	float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+	return mat3( T * invmax, B * invmax, N );
+}
+
+vec3 perturbNormal(vec3 N, vec3 WP, vec2 uv, vec3 normal_pixel)
+{
+	normal_pixel = normal_pixel * 255./127. - 128./127.;
+	mat3 TBN = cotangent_frame(N, WP, uv);
+	return normalize(TBN * normal_pixel);
+}
+
+
 out vec4 FragColor;
 
 void main()
@@ -401,7 +473,7 @@ void main()
 	vec3 N = normalize( v_normal );
 	if (u_has_normalmap == HASNORMALMAP)
 	{
-		N = normalmap.xyz;
+		N = perturbNormal(N, v_world_position , uv, normalmap.xyz);
 	}
 	
 	vec3 light = vec3(0.0);
@@ -409,7 +481,16 @@ void main()
 
 	for	( int i = 0; i < MAX_LIGHTS; i++){
 		if (i < u_num_lights){
+
 			vec4 current_light_info = u_light_info[i];
+			vec2 current_shadow_params = u_shadow_params[i];
+
+
+			float shadow_factor = 1.0;
+			if( current_shadow_params.x != 0.0 )
+			{
+				shadow_factor = testShadow( v_world_position, i, current_shadow_params.y );
+			}
 			
 			if( int(current_light_info.x) == DIRECTIONAL_LIGHT )
 			{
@@ -435,7 +516,7 @@ void main()
 						att *= 1.0 - (cos_angle - current_light_cone.x) / (current_light_cone.y - current_light_cone.x);
 				} 
 
-				light += max( NdotL, 0.0 ) * u_light_color[i] * att;
+				light += max( NdotL, 0.0 ) * u_light_color[i] * att * shadow_factor;
 			}
 			
 		}

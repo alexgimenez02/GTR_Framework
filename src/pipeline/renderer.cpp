@@ -431,7 +431,7 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 				shader->setUniform( "u_light_color", light->color * light->intensity );
 				shader->setUniform( "u_light_info", vec4((int)light->light_type,(int)light->near_distance, (int)light->max_distance, 0) ); 
 
-				shader->setUniform( "u_shadow_params", vec2(light->shadowmap?1:0, light->shadow_bias )); 
+				shader->setUniform( "u_shadow_params", vec2(light->shadowmap?1.0f:0.0f, light->shadow_bias )); 
 				if (light->shadowmap)
 				{
 					shader->setUniform( "u_shadowmap", light->shadowmap, 8 );
@@ -465,6 +465,10 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 
 		vec2 light_cone[MAX_LIGHTS];
 
+		vec2 shadow_params[MAX_LIGHTS];
+		mat4 shadow_viewprojs[MAX_LIGHTS];
+		GFX::Texture* shadowmaps[MAX_LIGHTS];
+
 		
 
 		int num_lights = lights.size();
@@ -487,6 +491,16 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 
 				if(light->light_type == eLightType::SPOT)
 					light_cone[i] = vec2(cos(light->cone_info.x * DEG2RAD), cos(light->cone_info.y * DEG2RAD));
+
+				shadow_params[i] = vec2(light->shadowmap ? 1 : 0, light->shadow_bias);
+				if (light->shadowmap)
+				{
+					shadowmaps[i] = light->shadowmap;
+					shadow_viewprojs[i] = light->shadow_viewproj;
+					continue;
+				}
+				shadowmaps[i] = nullptr;
+				shadow_viewprojs[i] = mat4();
 				
 			}
 
@@ -496,6 +510,20 @@ void Renderer::renderMeshWithMaterialLight(const Matrix44 model, GFX::Mesh* mesh
 			shader->setUniform4Array("u_light_info", (float*)&light_info, min(num_lights, MAX_LIGHTS));
 			shader->setUniform2Array("u_light_cone", (float*)&light_cone, min(num_lights, MAX_LIGHTS));
 			shader->setUniform1("u_num_lights", min(num_lights, MAX_LIGHTS));
+
+
+			shader->setUniform2Array("u_shadow_params", (float*)&shadow_params, min(num_lights, MAX_LIGHTS));
+			shader->setMatrix44Array("u_shadow_viewproj", shadow_viewprojs, min(num_lights, MAX_LIGHTS));
+			int i = 1;
+			for (size_t i = 0; i < min(num_lights, MAX_LIGHTS); i++)
+			{
+				if (i < num_lights)
+				{
+ 					std::string uniform_string = "u_shadowmap[" + std::to_string(i) + "]";
+					if(shadowmaps[i])
+						shader->setUniform(uniform_string.c_str(), shadowmaps[i], 8 + i);
+				}
+			}
 
 			mesh->render(GL_TRIANGLES);
 		}
